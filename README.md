@@ -1,2 +1,2 @@
 # ChatBox
-Mail sending server using socket
+Client and Server model offering chat communication
