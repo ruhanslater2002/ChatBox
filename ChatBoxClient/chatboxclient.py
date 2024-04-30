@@ -21,20 +21,22 @@ class ChatBoxClient:
 
             except KeyboardInterrupt:
                 print(colored(f"[-] Keyboard Interruption..", "red"))
-                self.stopThreads: bool = True # STOPS THREADS
-                self.socketConnection.close()
+                self.close_connection()
                 return
 
             if clientMessage == "/exit" or clientMessage == "/logout":
                 print(colored("[!] Closing connection..", "yellow"))
-                self.stopThreads: bool = True # STOPS THREADS
-                self.socketConnection.close()
+                self.close_connection()
                 return
 
             else:
                 # SENDS MESSAGE
                 # -- ENCRYPTION FUNCTION COMES HERE --
-                self.socketConnection.send(clientMessage.encode('ascii'))
+                try:
+                    self.socketConnection.send(clientMessage.encode('ascii'))
+                except Exception as error:
+                    print(colored("[-] Connection lost.", "red"))
+                    self.close_connection()
 
 
     def recv_message_handler(self) -> None:
@@ -45,16 +47,14 @@ class ChatBoxClient:
                     print(clientsResponse.decode('ascii'))
 
             except Exception as error:
-                self.socketConnection.close()
+                self.close_connection()
                 return
 
 
     def connect(self) -> None:
-        #INITIATING SOCKET
-        self.socketConnection: socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # CONNECTING TO SERVER
+        self.socketConnection: socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socketConnection.connect((self.host, self.port))
-        # IF CONNECTED
         print(colored(f"[+] Connected to host {self.host}, port {self.port}", "green"))
 
         # CLIENT CONSOLE CHAT
@@ -67,8 +67,15 @@ class ChatBoxClient:
         except Exception as error:
             print(colored(f"[-] Connection error.", "red"))
             print(colored(f"[-] {error}.", "red"))
-            self.socketConnection.close()
+            self.close_connection()
             return
+
+
+    def close_connection(self) -> None:
+        self.stopThreads: bool = True
+        self.socketConnection.close()
+        print(colored("[-] Connection closed.", "red"))
+        return
 
 
     def client_console(self) -> None:
@@ -80,7 +87,7 @@ class ChatBoxClient:
                 # STOPS CLIENT
                 print(colored("[!] Closing client..", "yellow"))
                 return
-            
+
             # EXECUTE COMMANDS
             elif clientCommand[0] == "show":
                 print("")
@@ -92,11 +99,13 @@ class ChatBoxClient:
                 print(f'└─> Host (set host <host>) -> {colored(self.host, "green")}')
                 print(f'└─> Port (set port <port>) -> {colored(self.port, "green")}')
                 print("")
+
             elif clientCommand[0] == "connect":
                 print(colored(f"[+] Connecting to host {self.host}, port {self.port}", "green"))
                 try:
                     self.connect()
                     return # BREAKS SO THAT IT DOESN'T CONTINUE WITH THE THREADS
+
                 except Exception as error:
                     print(colored(f"[-] Connection error.", "red"))
                     print(colored(f"[-] {error}", "red"))
@@ -106,26 +115,34 @@ class ChatBoxClient:
                 try:
                     self.username: str = str(clientCommand[2])
                     print(colored(f"[+] Username has been set to {self.username}", "green"))
+
                 except Exception as error:
                     print(colored(f"[-] {error}", "red"))
+
             elif clientCommand[0] == "set" and clientCommand[1] == "password":
                 try:
                     self.password: str = str(clientCommand[2])
                     print(colored(f"[+] Password has been set to {self.password}", "green"))
+
                 except Exception as error:
                     print(colored(f"[-] {error}", "red"))
+
             elif clientCommand[0] == "set" and clientCommand[1] == "host":
                 try:
                     self.host: str = str(clientCommand[2])
                     print(colored(f"[+] Host has been set to {self.host}", "green"))
+
                 except Exception as error:
                     print(colored(f"[-] {error}", "red"))
+
             elif clientCommand[0] == "set" and clientCommand[1] == "port":
                 try:
                     self.port: int = int(clientCommand[2])
                     print(colored(f"[+] Port has been set to {self.port}", "green"))
+
                 except Exception as error:
                     print(colored(f"[-] {error}", "red"))
+
             else:
                 print(colored("[-] Unknown command!", "red"))
 
