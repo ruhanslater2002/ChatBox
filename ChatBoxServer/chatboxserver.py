@@ -1,7 +1,10 @@
 import socket
 import json
 import threading
+import time
+
 from termcolor import colored
+import loginhandler
 
 class ChatBoxServer:
     def __init__(self) -> None:
@@ -41,26 +44,31 @@ class ChatBoxServer:
             consoleHandler: threading = threading.Thread(target=self.console_handler)
             consoleHandler.start()
 
-            while True:
-                if self.stopThreads:
-                    return
-                else:
-                    # STOPS LISTEN FOR CONNECTIONS
-                    clientConnection, clientAddress = self.serverSocket.accept()
+            while not self.stopThreads:
+                # STOPS LISTEN FOR CONNECTIONS
+                clientConnection, clientAddress = self.serverSocket.accept()
 
-                    # APPENDS CONNECTION TO LIST
-                    username: str = clientConnection.recv(1024)
-                    self.username.append(username.decode('ascii'))
+                # APPENDS CONNECTION TO LIST
+                clientConnection.send(colored("[!] Username: ", "yellow").encode('ascii'))
+                username: str = clientConnection.recv(1024).decode('ascii')
+                print(colored(f"[+] Connection from {username} ({clientAddress})", "green"))
+                time.sleep(0.2)
+                clientConnection.send(colored("[!] Password: ", "yellow").encode('ascii'))
+                password: str = clientConnection.recv(1024).decode('ascii')
+
+                if loginhandler.LoginHandler(username=username, password=password).check():
+                    clientConnection.send(colored("[+] Successfully logged in.", "green").encode('ascii'))
+                    self.username.append(username)
                     self.clientsConnected.append(clientConnection)
-
-                    # SENDS MESSAGE THAT CONNECTED TO CONSOLE
-                    print(colored(f"[+] Connection from {username.decode('ascii')} -> {clientAddress}", "green"))
 
                     clientHandler: threading = threading.Thread(target=self.client_connection_handler,
                                                                 args=(clientConnection,
                                                                       clientAddress,
-                                                                      username.decode('ascii')))
+                                                                      username))
                     clientHandler.start()
+                else:
+                    clientConnection.send(colored("[+] Login declined, password or username is incorrect.", "red").encode('ascii'))
+                    clientConnection.close()
 
         except Exception as error:
             self.stop_server()
@@ -125,13 +133,13 @@ class ChatBoxServer:
         self.msg_handler(message=colored(f"[+] {clientUsername} {clientAddress} connected.", "green"))
         try:
             while not self.stopThreads:
+                # WAITS FOR MESSAGE FROM CLIENT
                 clientReceive: bytes = clientConnection.recv(1024)
 
-                if clientReceive:
-                    # DEBUGS CLIENT CHATS ON SERVETR
-                    print("CONSOLE: " + colored(clientUsername, "light_blue") + " -> " + clientReceive.decode('ascii'))
-                    clientMessage: str = colored(clientUsername, "light_blue") + " -> " + clientReceive.decode('ascii')
-                    self.msg_handler(message=clientMessage, clientConnection=clientConnection)
+                # DEBUGS CLIENT CHATS ON SERVETR
+                print("CONSOLE: " + colored(clientUsername, "light_blue") + " -> " + clientReceive.decode('ascii'))
+                clientMessage: str = colored(clientUsername, "light_blue") + " -> " + clientReceive.decode('ascii')
+                self.msg_handler(message=clientMessage, clientConnection=clientConnection)
 
         except Exception as error:
             # CLOSE CLIENT CONNECTION IF ERROR OCCURS
@@ -162,5 +170,3 @@ class ChatBoxServer:
 
 if __name__ == '__main__':
     ChatBoxServer()
-
-
