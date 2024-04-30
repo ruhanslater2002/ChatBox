@@ -124,37 +124,43 @@ class ChatBoxServer:
                 time.sleep(0.1)
                 clientConnection.send(colored("[!] Password: ", "yellow").encode('ascii'))
                 clientPassword: str = clientConnection.recv(1024).decode('ascii')
-                loginManage: loginhandler = loginhandler.LoginHandler(username=clientUsername, password=clientPassword)
 
-                # CHECKS USERNAME AND PASSWORD
-                if loginManage.check():
-                    clientConnection.send(colored("[+] Successfully logged in.", "green").encode('ascii'))
-                    # APPENDS CONNECTION TO LIST
-                    self.username.append(clientUsername)
-                    self.clientsConnected.append(clientConnection)
-
-                    # SENDS MESSAGE THAT CONNECTED
-                    self.msg_handler(message=colored(f"[+] {clientUsername} {clientAddress} connected.", "green"))
-
-                    try:
-                        while not self.stopThreads:
-                            # WAITS FOR MESSAGE FROM CLIENT
-                            clientReceive: bytes = clientConnection.recv(1024)
-                            print("CONSOLE: " + colored(clientUsername, "light_blue") + " -> " + clientReceive.decode('ascii'))
-                            clientMessage: str = colored(clientUsername, "light_blue") + " -> " + clientReceive.decode('ascii')
-                            self.msg_handler(message=clientMessage, clientConnection=clientConnection)
-
-                    except Exception as error:
-                        # CLOSE CLIENT CONNECTION IF ERROR OCCURS
-                        print(colored(f"[-] Disconnection from {clientAddress}", "red"))
-                        self.client_disconnection_handler(clientConnection=clientConnection, clientAddress=clientAddress, clientUsername=clientUsername)
-                        return
+                if clientUsername in self.username:
+                    print(colored(f"[-] {clientUsername} is already logged in.", "red"))
+                    clientConnection.send(colored(f"[-] {clientUsername} is already logged in.", "red").encode('ascii'))
 
                 else:
-                    clientConnection.send(colored("[-] Login declined, password or username is incorrect.", "red").encode('ascii'))
-                    print(colored(f"[-] Disconnection from {clientAddress}", "red"))
-                    clientConnection.close()
-                    return
+                    loginManage: loginhandler = loginhandler.LoginHandler(username=clientUsername, password=clientPassword)
+
+                    # CHECKS USERNAME AND PASSWORD
+                    if loginManage.check():
+                        clientConnection.send(colored("[+] Successfully logged in.", "green").encode('ascii'))
+                        # APPENDS CONNECTION TO LIST
+                        self.username.append(clientUsername)
+                        self.clientsConnected.append(clientConnection)
+
+                        # SENDS MESSAGE THAT CONNECTED
+                        self.msg_handler(message=colored(f"[+] {clientUsername} {clientAddress} connected.", "green"))
+
+                        try:
+                            while not self.stopThreads:
+                                # WAITS FOR MESSAGE FROM CLIENT
+                                clientReceive: bytes = clientConnection.recv(1024)
+                                print("CONSOLE: " + colored(clientUsername, "light_blue") + " -> " + clientReceive.decode('ascii'))
+                                clientMessage: str = colored(clientUsername, "light_blue") + " -> " + clientReceive.decode('ascii')
+                                self.msg_handler(message=clientMessage, clientConnection=clientConnection)
+
+                        except Exception as error:
+                            # CLOSE CLIENT CONNECTION IF ERROR OCCURS
+                            print(colored(f"[-] Disconnection from {clientAddress}", "red"))
+                            self.client_disconnection_handler(clientConnection=clientConnection, clientAddress=clientAddress, clientUsername=clientUsername)
+                            return
+
+                    else:
+                        clientConnection.send(colored("[-] Login declined, password or username is incorrect.", "red").encode('ascii'))
+                        print(colored(f"[-] Disconnection from {clientAddress}", "red"))
+                        clientConnection.close()
+                        return
 
             elif clientOption == "2":
                 print(colored(f"[+] Client {clientAddress} selected option 2", "green"))
