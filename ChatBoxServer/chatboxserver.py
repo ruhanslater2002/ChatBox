@@ -111,7 +111,8 @@ class ChatBoxServer:
                             clientConnection.send(colored("[-] Unknown option.", "red").encode('ascii'))
 
                 except Exception as error:
-                    pass
+                    print(colored(f"[-] Disconnection from {clientAddress}", "red"))
+                    clientConnection.close()
 
         except Exception as error:
             pass
