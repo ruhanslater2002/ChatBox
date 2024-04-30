@@ -130,8 +130,7 @@ class ChatBoxServer:
                     clientConnection.close()
 
         except Exception as error:
-            self.stop_server()
-            return
+            pass
 
 
     def stop_server(self) -> None:
