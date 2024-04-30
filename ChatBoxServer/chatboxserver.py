@@ -72,6 +72,7 @@ class ChatBoxServer:
 
                             else:
                                 clientConnection.send(colored("[-] Login declined, password or username is incorrect.", "red").encode('ascii'))
+                                print(colored(f"[-] Disconnection from {clientAddress}", "red"))
                                 clientConnection.close()
                                 return
 
