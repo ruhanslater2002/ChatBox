@@ -9,7 +9,6 @@ import loginhandler
 class ChatBoxServer:
     def __init__(self) -> None:
         print(colored("[+] STARTING SERVER.", "green"))
-
         #JSON CONFIG FILE LOADER
         self.configFile: str = "config.json"
         self.configFile: dict = self.config_loader()
@@ -18,6 +17,7 @@ class ChatBoxServer:
         try:
             self.serverHost: str = str(self.configFile['connection']['host'])
             self.serverPort: int = int(self.configFile['connection']['port'])
+
         except Exception as error:
             print(colored(f"[-] Initialising error, {error}.", "red"))
 
@@ -25,7 +25,6 @@ class ChatBoxServer:
         self.clientsConnected: list = []
         self.username: list = []
         self.stopThreads: bool = False
-
         # STARTING AND INISIALISING SERVER
         self.serverSocket: socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.start_server()
@@ -35,11 +34,8 @@ class ChatBoxServer:
         try:
             # STARTING CONNECTION
             self.serverSocket.bind((self.serverHost, self.serverPort))
-            # CONNECTIONS ALLOWED
             self.serverSocket.listen()
-
             print(colored("[+] SERVER RUNNING.", "green"))
-
             # STARTS THE CONSOLE HANDLER WHEN SERVER STARTS
             consoleHandler: threading = threading.Thread(target=self.console_handler)
             consoleHandler.start()
@@ -48,7 +44,6 @@ class ChatBoxServer:
                 # STOPS LISTEN FOR CONNECTIONS
                 clientConnection, clientAddress = self.serverSocket.accept()
                 print(colored(f"[+] Connection from {clientAddress}", "green"))
-
                 clientConnection.send(colored("[+] 1 -> Login, 2 -> Register", "green").encode('ascii'))
                 clientOption: str = clientConnection.recv(1024).decode('ascii')
                 time.sleep(0.1)
@@ -61,36 +56,31 @@ class ChatBoxServer:
                     time.sleep(0.1)
                     clientConnection.send(colored("[!] Password: ", "yellow").encode('ascii'))
                     password: str = clientConnection.recv(1024).decode('ascii')
-
                     loginManage: loginhandler = loginhandler.LoginHandler(username=username, password=password)
+
                     # CHECKS USERNAME AND PASSWORD
                     if loginManage.check():
                         clientConnection.send(colored("[+] Successfully logged in.", "green").encode('ascii'))
                         # APPENDS CONNECTION TO LIST
                         self.username.append(username)
                         self.clientsConnected.append(clientConnection)
-
                         clientHandler: threading = threading.Thread(target=self.client_connection_handler,
-                                                                    args=(clientConnection,
-                                                                          clientAddress,
-                                                                          username))
+                                                                    args=(clientConnection, clientAddress, username))
                         clientHandler.start()
+
                     else:
                         clientConnection.send(colored("[-] Login declined, password or username is incorrect.", "red").encode('ascii'))
                         clientConnection.close()
 
                 elif clientOption == "2":
                     print(colored(f"[+] Client {clientAddress} selected option 2", "green"))
-
                     # ASKS FOR USERNAME AND PASSWORD TO REGISTER
                     clientConnection.send(colored("[!] New username: ", "yellow").encode('ascii'))
                     newUsername: str = clientConnection.recv(1024).decode('ascii')
                     time.sleep(0.1)
                     clientConnection.send(colored("[!] New password: ", "yellow").encode('ascii'))
                     newPassword: str = clientConnection.recv(1024).decode('ascii')
-
                     # ADD USERNAME AND PASSWORD TO DATABASE
-
                     loginManage: loginhandler = loginhandler.LoginHandler(username=newUsername, password=newPassword)
 
                     # REGISTERS NEW CREDENTIALS
@@ -101,11 +91,8 @@ class ChatBoxServer:
                             # APPENDS CONNECTION TO LIST
                             self.username.append(newUsername)
                             self.clientsConnected.append(clientConnection)
-
                             clientHandler: threading = threading.Thread(target=self.client_connection_handler,
-                                                                        args=(clientConnection,
-                                                                              clientAddress,
-                                                                              newUsername))
+                                                                        args=(clientConnection, clientAddress, newUsername))
                             clientHandler.start()
 
                         else:
@@ -162,6 +149,7 @@ class ChatBoxServer:
                     print(colored(f"[!] Stopping server..", "yellow"))
                     self.stop_server()
                     return
+
                 elif consoleCommand[0] == "/show":
                     print("")
                     print("| SERVER CONNECTION")
@@ -171,6 +159,7 @@ class ChatBoxServer:
                     print("")
                     print(f'└─> Connected -> {colored(self.username, "green")}')
                     print("")
+
                 else:
                     consoleMessage = colored("CONSOLE", "red") + ": " + consoleMessage
                     self.msg_handler(message=consoleMessage)
@@ -188,23 +177,18 @@ class ChatBoxServer:
             while not self.stopThreads:
                 # WAITS FOR MESSAGE FROM CLIENT
                 clientReceive: bytes = clientConnection.recv(1024)
-
-                # DEBUGS CLIENT CHATS ON SERVETR
                 print("CONSOLE: " + colored(clientUsername, "light_blue") + " -> " + clientReceive.decode('ascii'))
                 clientMessage: str = colored(clientUsername, "light_blue") + " -> " + clientReceive.decode('ascii')
                 self.msg_handler(message=clientMessage, clientConnection=clientConnection)
 
         except Exception as error:
             # CLOSE CLIENT CONNECTION IF ERROR OCCURS
-            self.client_disconnection_handler(clientConnection=clientConnection,
-                                              clientAddress=clientAddress,
-                                              clientUsername=clientUsername)
+            self.client_disconnection_handler(clientConnection=clientConnection, clientAddress=clientAddress, clientUsername=clientUsername)
             return
 
 
     def client_disconnection_handler(self, clientConnection: socket, clientAddress: socket, clientUsername: str) -> None:
         # CLOSE CLIENT CONNECTION
-        # REMOVES CLIENT FROM ACTIVE LISTS
         if clientConnection in self.clientsConnected:
             self.clientsConnected.remove(clientConnection)
 
@@ -212,10 +196,8 @@ class ChatBoxServer:
             self.username.remove(clientUsername)
 
         print(colored(f"[-] {clientUsername} {clientAddress} disconnected.", "red"))
-
         # SENDS FOR CLIENTS
         self.msg_handler(message=colored(f"[-] {clientUsername} {clientAddress} disconnected.", "red"))
-
         # CLOSES CLIENT CONNECTION TO THE SERVER
         clientConnection.close()
         return
@@ -223,5 +205,4 @@ class ChatBoxServer:
 
 if __name__ == '__main__':
     ChatBoxServer()
-
 
