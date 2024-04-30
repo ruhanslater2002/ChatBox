@@ -50,16 +50,10 @@ class ChatBoxServer:
                 print(colored(f"[+] Connection from {clientAddress}", "green"))
 
                 clientConnection.send(colored("[+] 1 -> Login, 2 -> Register", "green").encode('ascii'))
-                try:
-                    clientOption: int = int(clientConnection.recv(1024).decode('ascii'))
-                except Exception as error:
-                    print(colored(f"[-] Client option error, requires a number", "red"))
-                    clientConnection.send(colored(f"[-] Client option error, requires a number", "red").encode('ascii'))
-                    print(colored(f"[-] Disconnection from {clientAddress}", "red"))
-                    clientConnection.close()
+                clientOption: str = clientConnection.recv(1024).decode('ascii')
                 time.sleep(0.1)
 
-                if clientOption == 1:
+                if clientOption == "1":
                     print(colored(f"[+] Client {clientAddress} selected option 1", "green"))
                     # ASKS FOR USERNAME AND PASSWORD
                     clientConnection.send(colored("[!] Username: ", "yellow").encode('ascii'))
@@ -85,7 +79,7 @@ class ChatBoxServer:
                         clientConnection.send(colored("[-] Login declined, password or username is incorrect.", "red").encode('ascii'))
                         clientConnection.close()
 
-                elif clientOption == 2:
+                elif clientOption == "2":
                     print(colored(f"[+] Client {clientAddress} selected option 2", "green"))
 
                     # ASKS FOR USERNAME AND PASSWORD TO REGISTER
@@ -130,7 +124,8 @@ class ChatBoxServer:
                     clientConnection.close()
 
         except Exception as error:
-            pass
+            self.stop_server()
+            return
 
 
     def stop_server(self) -> None:
