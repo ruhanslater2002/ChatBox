@@ -3,60 +3,50 @@ import threading
 from termcolor import colored
 
 class ChatBoxClient:
-    def __init__(self, host: str, port: int, username: str) -> None:
+    def __init__(self) -> None:
         # SERVER TO CONNECT ATTRIBUTES
-        self.host: str = str(host)
-        self.port: int = int(port)
-
-        # YOUR IDENTIFICATION
-        self.username: str = str(username)
+        self.host: str = "192.168.0.10"
+        self.port: int = 8846
+        self.username: str = "admin"
+        self.password: str = "password123"
         self.stopThreads: bool = False
+        self.client_console()
 
 
-    def send_message(self) -> None:
-        while True:
-            if self.stopThreads:
+    def send_message_handler(self) -> None:
+        while not self.stopThreads:
+            # GETS INPUT
+            try:
+                clientMessage: str = input("")
+
+            except KeyboardInterrupt:
+                print(colored(f"[-] Keyboard Interruption..", "red"))
+                self.stopThreads: bool = True # STOPS THREADS
+                self.socketConnection.close()
+                return
+
+            if clientMessage == "/exit" or clientMessage == "/logout":
+                print(colored("[!] Closing connection..", "yellow"))
+                self.stopThreads: bool = True # STOPS THREADS
+                self.socketConnection.close()
                 return
 
             else:
-                # GETS INPUT
-                try:
-                    clientMessage: str = input("")
-
-                except KeyboardInterrupt:
-                    print(colored(f"[-] Keyboard Interruption..", "red"))
-                    self.stopThreads: bool = True # STOPS THREADS
-                    self.socketConnection.close()
-                    return
-
-                if clientMessage == "/exit" or clientMessage == "/logout":
-                    print(colored("[!] Closing connection..", "yellow"))
-                    self.stopThreads: bool = True # STOPS THREADS
-                    self.socketConnection.close()
-                    return
-
-                else:
-                    # SENDS MESSAGE
-                    # -- ENCRYPTION FUNCTION COMES HERE --
-                    self.socketConnection.send(clientMessage.encode('ascii'))
+                # SENDS MESSAGE
+                # -- ENCRYPTION FUNCTION COMES HERE --
+                self.socketConnection.send(clientMessage.encode('ascii'))
 
 
-    def recv_message(self) -> None:
-        while True:
-            if self.stopThreads:
+    def recv_message_handler(self) -> None:
+        while not self.stopThreads:
+            try:
+                clientsResponse: bytes = self.socketConnection.recv(1024)
+                if clientsResponse:
+                    print(clientsResponse.decode('ascii'))
+
+            except Exception as error:
+                self.socketConnection.close()
                 return
-
-            else:
-                try:
-                    clientsResponse: bytes = self.socketConnection.recv(1024)
-                    if clientsResponse:
-                        print(clientsResponse.decode('ascii'))
-
-                except Exception as error:
-                    # print(colored(f"[-] Recv message error.", "red"))
-                    # print(colored(f"[-] {error}.", "red"))
-                    self.socketConnection.close()
-                    return
 
 
     def connect(self) -> None:
@@ -69,12 +59,9 @@ class ChatBoxClient:
 
         # CLIENT CONSOLE CHAT
         try:
-            #SENDS USERNAME TO THE SERVER
-            self.socketConnection.send(self.username.encode('ascii'))
-
-            recvMessageThread: threading = threading.Thread(target=self.recv_message)
+            recvMessageThread: threading = threading.Thread(target=self.recv_message_handler)
+            sendMessageThread: threading = threading.Thread(target=self.send_message_handler)
             recvMessageThread.start()
-            sendMessageThread: threading = threading.Thread(target=self.send_message)
             sendMessageThread.start()
 
         except Exception as error:
@@ -93,11 +80,13 @@ class ChatBoxClient:
                 # STOPS CLIENT
                 print(colored("[!] Closing client..", "yellow"))
                 return
+            
             # EXECUTE COMMANDS
             elif clientCommand[0] == "show":
                 print("")
                 print("| IDENTIFICATION")
                 print(f'└─>Username (set username <username>) -> {colored(self.username, "green")}')
+                print(f'└─>Password (set password <password>) -> {colored(self.password, "green")}')
                 print("")
                 print("| CONNECTION")
                 print(f'└─> Host (set host <host>) -> {colored(self.host, "green")}')
@@ -119,6 +108,12 @@ class ChatBoxClient:
                     print(colored(f"[+] Username has been set to {self.username}", "green"))
                 except Exception as error:
                     print(colored(f"[-] {error}", "red"))
+            elif clientCommand[0] == "set" and clientCommand[1] == "password":
+                try:
+                    self.password: str = str(clientCommand[2])
+                    print(colored(f"[+] Password has been set to {self.password}", "green"))
+                except Exception as error:
+                    print(colored(f"[-] {error}", "red"))
             elif clientCommand[0] == "set" and clientCommand[1] == "host":
                 try:
                     self.host: str = str(clientCommand[2])
@@ -131,17 +126,10 @@ class ChatBoxClient:
                     print(colored(f"[+] Port has been set to {self.port}", "green"))
                 except Exception as error:
                     print(colored(f"[-] {error}", "red"))
-
             else:
                 print(colored("[-] Unknown command!", "red"))
 
 
-# Example usage:
 if __name__ == "__main__":
-    # DEFAULT VALUES
-    host: str = str(socket.gethostbyname(socket.gethostname()))
-    port: int = 8846
-    username: str = str(socket.gethostname())
-
     # START CLIENT
-    ChatBoxClient(host=host, port=port, username=username).client_console()
+    ChatBoxClient()
