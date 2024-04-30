@@ -50,7 +50,13 @@ class ChatBoxServer:
                 print(colored(f"[+] Connection from {clientAddress}", "green"))
 
                 clientConnection.send(colored("[+] 1 -> Login, 2 -> Register", "green").encode('ascii'))
-                clientOption: int = int(clientConnection.recv(1024).decode('ascii'))
+                try:
+                    clientOption: int = int(clientConnection.recv(1024).decode('ascii'))
+                except Exception as error:
+                    print(colored(f"[-] Client option error, requires a number", "red"))
+                    clientConnection.send(colored(f"[-] Client option error, requires a number", "red").encode('ascii'))
+                    print(colored(f"[-] Disconnection from {clientAddress}", "red"))
+                    clientConnection.close()
                 time.sleep(0.1)
 
                 if clientOption == 1:
