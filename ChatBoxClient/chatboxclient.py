@@ -47,7 +47,6 @@ class ChatBoxClient:
                     print(clientsResponse.decode('ascii'))
 
             except Exception as error:
-                self.close_connection()
                 return
 
 
